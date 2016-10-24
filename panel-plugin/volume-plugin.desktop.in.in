@@ -1,0 +1,9 @@
+[Xfce Panel]
+Type=X-XFCE-PanelPlugin
+Encoding=UTF-8
+_Name=Gooroom Volume Plugin
+_Comment=Adjust the audio volume of the PulseAudio sound system
+Icon=gooroom-volume-plugin
+X-XFCE-Module=volume-plugin
+X-XFCE-Internal=FALSE
+X-XFCE-API=@LIBXFCE4PANEL_VERSION_API@
