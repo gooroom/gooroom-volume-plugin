@@ -17,7 +17,7 @@ msgstr ""
 
 #: ../panel-plugin/volume-plugin.desktop.in.in.h:1
 msgid "Gooroom Volume Plugin"
-msgstr "Gooroom 볼륨 조절 플러그인"
+msgstr "볼륨 조절 플러그인"
 
 #: ../panel-plugin/volume-plugin.desktop.in.in.h:2
 msgid "Adjust the audio volume of the PulseAudio sound system"

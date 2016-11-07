@@ -361,9 +361,19 @@ static gboolean
 volume_plugin_size_changed (XfcePanelPlugin *panel_plugin,
                             gint             size)
 {
-	gtk_widget_set_size_request (GTK_WIDGET (panel_plugin), -1, size);
+	if (xfce_panel_plugin_get_mode (panel_plugin) == XFCE_PANEL_PLUGIN_MODE_HORIZONTAL) {
+		gtk_widget_set_size_request (GTK_WIDGET (panel_plugin), -1, size);
+	} else {
+		gtk_widget_set_size_request (GTK_WIDGET (panel_plugin), size, -1);
+	}
 
 	return TRUE;
+}
+
+static void
+volume_plugin_mode_changed (XfcePanelPlugin *plugin, XfcePanelPluginMode mode)
+{
+	volume_plugin_size_changed (plugin, xfce_panel_plugin_get_size (plugin));
 }
 
 static void
@@ -424,4 +434,5 @@ volume_plugin_class_init (VolumePluginClass *klass)
 	plugin_class->construct = volume_plugin_construct;
 	plugin_class->free_data = volume_plugin_free_data;
 	plugin_class->size_changed = volume_plugin_size_changed;
+	plugin_class->mode_changed = volume_plugin_mode_changed;
 }
