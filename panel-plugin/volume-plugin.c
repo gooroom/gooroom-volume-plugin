@@ -31,6 +31,8 @@
 
 
 #include "volume-plugin.h"
+#include "volume-resources.h"
+
 #include "pulseaudio-config.h"
 #include "pulseaudio-volume.h"
 
@@ -39,6 +41,7 @@
 #define VOLUME_PLUGIN_LOWER_VOLUME_KEY  "XF86AudioLowerVolume"
 #define VOLUME_PLUGIN_MUTE_KEY          "XF86AudioMute"
 
+#define GET_WIDGET(builder, x) GTK_WIDGET (gtk_builder_get_object (builder, x))
 
 
 struct _VolumePluginClass
@@ -49,18 +52,20 @@ struct _VolumePluginClass
 /* plugin structure */
 struct _VolumePlugin
 {
-	XfcePanelPlugin      __parent__;
+	XfcePanelPlugin   __parent__;
 
-	PulseaudioConfig    *config;
-	PulseaudioVolume    *volume;
+	PulseaudioConfig  *config;
+	PulseaudioVolume  *volume;
 
-	GtkWidget           *button;
-	GtkWidget           *image;
-	GtkWidget           *scale;
-	GtkWidget           *popup_window;
-	GtkWidget           *popup_vol_icon;
+	GtkBuilder        *builder;
 
-	const gchar         *icon_name;
+	GtkWidget         *button;
+	GtkWidget         *image;
+	GtkWidget         *scale;
+	GtkWidget         *popup_window;
+	GtkWidget         *popup_vol_icon;
+
+	const gchar       *icon_name;
 };
 
 
@@ -262,47 +267,56 @@ on_popup_key_press_event (GtkWidget *widget, GdkEventKey *event, gpointer data)
 	return FALSE;
 }
 
-static GtkWidget *
-popup_volume_window (VolumePlugin *plugin)
+static gboolean
+close_popup_window (gpointer data)
 {
-	GtkWidget *window;
-	GtkWidget *img, *hbox, *button;
+	VolumePlugin *plugin = VOLUME_PLUGIN (data);
+
+	if (plugin->popup_window != NULL)
+		on_popup_window_closed (plugin);
+
+	return FALSE;
+}
+
+
+static GtkWidget *
+popup_window_new (VolumePlugin *plugin)
+{
+	GError    *error = NULL;
 	GdkScreen *screen;
+	GtkWidget *window, *button;
 
-	window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_decorated (GTK_WINDOW (window), FALSE);
-	gtk_window_set_skip_taskbar_hint (GTK_WINDOW (window), TRUE);
-	gtk_window_set_skip_pager_hint(GTK_WINDOW (window), TRUE);
-	gtk_window_stick(GTK_WINDOW (window));
-	gtk_container_set_border_width (GTK_CONTAINER (window), 9);
-
-	screen = gtk_widget_get_screen (GTK_WIDGET (plugin->button));
-	gtk_window_set_screen (GTK_WINDOW (window), screen);
-
-	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
-
-	button = gtk_button_new ();
-	gtk_button_set_relief (GTK_BUTTON (button), GTK_RELIEF_NONE);
-	gtk_box_pack_start (GTK_BOX (hbox), button, TRUE, TRUE, 0);
-
-	img = plugin->popup_vol_icon = gtk_image_new ();
-	gtk_container_add (GTK_CONTAINER (button), img);
-
-	if (pulseaudio_volume_get_muted (plugin->volume)) {
-		gtk_image_set_from_icon_name (GTK_IMAGE (img), "audio-volume-muted-symbolic", GTK_ICON_SIZE_BUTTON);
-	} else {
-		gtk_image_set_from_icon_name (GTK_IMAGE (img), "audio-volume-high-symbolic", GTK_ICON_SIZE_BUTTON);
+	gtk_builder_add_from_resource (plugin->builder, "/kr/gooroom/volume/plugin/volume-window.ui", &error);
+	if (error) {
+		g_error_free (error);
+		return NULL;
 	}
 
-	plugin->scale = gtk_scale_new_with_range (GTK_ORIENTATION_HORIZONTAL, 0.0, 100.0, 1.0);
+	window = GET_WIDGET (plugin->builder, "volume-window");
+	gtk_window_set_type_hint (GTK_WINDOW (window), GDK_WINDOW_TYPE_HINT_UTILITY);
+	gtk_window_set_decorated (GTK_WINDOW (window), FALSE);
+	gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
+	gtk_window_set_skip_taskbar_hint (GTK_WINDOW (window), TRUE);
+	gtk_window_set_skip_pager_hint(GTK_WINDOW (window), TRUE);
+	gtk_window_set_keep_above (GTK_WINDOW (window), TRUE);
+	gtk_window_stick(GTK_WINDOW (window));
 
-	gtk_widget_set_size_request (plugin->scale, 200, -1);
-	gtk_range_set_inverted (GTK_RANGE (plugin->scale), FALSE);
-	gtk_scale_set_draw_value (GTK_SCALE (plugin->scale), FALSE);
+	if (gtk_widget_has_screen (GTK_WIDGET (plugin->button)))
+		screen = gtk_widget_get_screen (GTK_WIDGET (plugin->button));
+	else
+		screen = gdk_display_get_default_screen (gdk_display_get_default ());
 
-	gtk_box_pack_start (GTK_BOX (hbox), plugin->scale, TRUE, TRUE, 0);
+	gtk_window_set_screen (GTK_WINDOW (window), screen);
 
-	gtk_container_add (GTK_CONTAINER (window), hbox);
+	button                 = GET_WIDGET (plugin->builder, "btn-volume");
+	plugin->scale          = GET_WIDGET (plugin->builder, "scale-volume");
+	plugin->popup_vol_icon = GET_WIDGET (plugin->builder, "popup-vol-icon");
+
+	if (pulseaudio_volume_get_muted (plugin->volume)) {
+		gtk_image_set_from_icon_name (GTK_IMAGE (plugin->popup_vol_icon), "audio-volume-muted-symbolic", GTK_ICON_SIZE_BUTTON);
+	} else {
+		gtk_image_set_from_icon_name (GTK_IMAGE (plugin->popup_vol_icon), "audio-volume-high-symbolic", GTK_ICON_SIZE_BUTTON);
+	}
 
 	g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (on_mute_button_clicked), plugin);
 	g_signal_connect (G_OBJECT (plugin->scale), "value-changed", G_CALLBACK (on_scale_value_changed), plugin);
@@ -313,12 +327,12 @@ popup_volume_window (VolumePlugin *plugin)
 	g_signal_connect_swapped (G_OBJECT (window), "delete-event", G_CALLBACK (on_popup_window_closed), plugin);
 	g_signal_connect_swapped (G_OBJECT (window), "focus-out-event", G_CALLBACK (on_popup_window_closed), plugin);
 
-	gtk_widget_show_all (window);
-
 	if (pulseaudio_volume_get_connected (plugin->volume))
 		on_volume_changed (plugin->volume, plugin);
 	else
 		gtk_widget_set_sensitive (window, FALSE);
+
+	gtk_widget_show (window);
 
 	xfce_panel_plugin_block_autohide (XFCE_PANEL_PLUGIN (plugin), TRUE);
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (plugin->button), TRUE);
@@ -336,12 +350,11 @@ on_volume_button_pressed (GtkWidget *widget, GdkEventButton *event, gpointer dat
 			if (plugin->popup_window != NULL) {
 				on_popup_window_closed (plugin);
 			} else {
-				plugin->popup_window = popup_volume_window (plugin);
+				plugin->popup_window = popup_window_new (plugin);
 			}
 
 			return TRUE;
 		}
-		return TRUE;
 	}
 
 	/* bypass GTK_TOGGLE_BUTTON's handler and go directly to the plugin's one */
@@ -355,6 +368,11 @@ volume_plugin_free_data (XfcePanelPlugin *panel_plugin)
 
 	/* release keybindings */
 	volume_plugin_unbind_keys (plugin);
+
+	if (plugin->builder)
+		g_object_unref (plugin->builder);
+
+	close_popup_window (plugin);
 }
 
 static gboolean
@@ -390,6 +408,10 @@ volume_plugin_init (VolumePlugin *plugin)
 	plugin->popup_window   = NULL;
 	plugin->popup_vol_icon = NULL;
 
+	g_resources_register (volume_get_resource ());
+
+	plugin->builder = gtk_builder_new ();
+
 	plugin->config = pulseaudio_config_new (xfce_panel_plugin_get_property_base (XFCE_PANEL_PLUGIN (plugin)));
 	plugin->volume = pulseaudio_volume_new (plugin->config);
 
@@ -418,7 +440,6 @@ volume_plugin_init (VolumePlugin *plugin)
 
 	volume_button_update (plugin, TRUE);
 }
-
 
 static void
 volume_plugin_construct (XfcePanelPlugin *panel_plugin)

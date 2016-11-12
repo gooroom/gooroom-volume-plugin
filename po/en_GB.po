@@ -22,3 +22,7 @@ msgstr "Volume Control Plugin"
 #: ../panel-plugin/volume-plugin.desktop.in.in.h:2
 msgid "Adjust the audio volume of the PulseAudio sound system"
 msgstr "Adjust the audio volume of the PulseAudio sound system"
+
+#: ../panel-plugin/volume-window.ui.h:1
+msgid "Volume Control"
+msgstr "Volume Control"

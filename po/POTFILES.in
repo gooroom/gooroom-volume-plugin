@@ -1,4 +1,5 @@
-panel-plugin/volume-plugin.desktop.in.in
 panel-plugin/volume-plugin.c
 panel-plugin/pulseaudio-config.c
 panel-plugin/pulseaudio-volume.c
+panel-plugin/volume-plugin.desktop.in.in
+[type: gettext/glade]panel-plugin/volume-window.ui

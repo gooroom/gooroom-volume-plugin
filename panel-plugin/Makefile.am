@@ -10,7 +10,12 @@ plugindir = $(libdir)/xfce4/panel/plugins
 plugin_LTLIBRARIES = \
 	libvolume-plugin.la
 
+BUILT_SOURCES = \
+	volume-resources.c \
+	volume-resources.h
+
 libvolume_plugin_la_SOURCES = \
+	$(BUILT_SOURCES) \
 	pulseaudio-volume.c \
 	pulseaudio-volume.h \
 	pulseaudio-config.c \
@@ -20,6 +25,11 @@ libvolume_plugin_la_SOURCES = \
 	volume-plugin.c \
 	volume-plugin.h
 
+resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/gresource.xml)
+volume-resources.c: gresource.xml $(resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name volume $<
+volume-resources.h: gresource.xml $(resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name volume $<
 
 libvolume_plugin_la_CFLAGS = \
 	$(CANBERRA_CFLAGS) \
