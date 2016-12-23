@@ -314,8 +314,10 @@ popup_window_new (VolumePlugin *plugin)
 
 	if (pulseaudio_volume_get_muted (plugin->volume)) {
 		gtk_image_set_from_icon_name (GTK_IMAGE (plugin->popup_vol_icon), "audio-volume-muted-symbolic", GTK_ICON_SIZE_BUTTON);
+		gtk_widget_set_sensitive (plugin->scale, FALSE);
 	} else {
 		gtk_image_set_from_icon_name (GTK_IMAGE (plugin->popup_vol_icon), "audio-volume-high-symbolic", GTK_ICON_SIZE_BUTTON);
+		gtk_widget_set_sensitive (plugin->scale, TRUE);
 	}
 
 	g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (on_mute_button_clicked), plugin);
