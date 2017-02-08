@@ -1,5 +1,12 @@
-gooroom-volume-plugin (0.1) UNRELEASED; urgency=medium
+gooroom-volume-plugin (0.1+grm1) unstable; urgency=medium
 
+  [ cjheo ]
   * Intial Release
+  * [64d5b394] Initial commit
+  * [c0550090] Add code for changing panel orientation
+  * [83336d58] Change volume popup window UI
+  * [dced78d5] Modified to prevent volume control from being muted
 
- -- cjheo <cjheo@gooroom.kr>  Mon, 24 Oct 2016 22:03:35 +0900
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Wed, 08 Feb 2017 12:22:30 +0900
