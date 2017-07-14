@@ -2,7 +2,7 @@
 
 iconsdir = $(datadir)/icons/hicolor/scalable/apps
 icons_DATA =								\
-	gooroom-volume-plugin.svg
+	volume-plugin.svg
 
 EXTRA_DIST =								\
 	$(icons_DATA)

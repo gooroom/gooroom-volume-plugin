@@ -1,7 +1,7 @@
 SUBDIRS =								\
 	scalable
 
-gtk_update_icon_cache = gtk-update-icon-cache-3.0 -f -t $(datadir)/icons/hicolor
+gtk_update_icon_cache = gtk-update-icon-cache -f -t $(datadir)/icons/hicolor
 
 install-data-hook:
 	@-if test -z "$(DESTDIR)"; then					\

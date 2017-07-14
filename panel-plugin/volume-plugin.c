@@ -1,4 +1,11 @@
 /*
+ * Origianl work Copyright (c) 2014-2017 Andrzej <andrzejr@xfce.org>
+ *                             2017      Viktor Odintsev <zakhams@gmail.com>
+ *                             2017      Matthieu Mota <matthieumota@gmail.com>
+ *
+ * Modified work Copyright (c) 2017 Gooroom Project Team
+ *
+ *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
  *  as published by the Free Software Foundation; either version 2
@@ -103,8 +110,9 @@ volume_plugin_mute_pressed (const char *keystring, gpointer data)
 static gboolean
 volume_plugin_bind_keys (VolumePlugin *plugin)
 {
+	g_return_val_if_fail (IS_VOLUME_PLUGIN (plugin), FALSE);
+
 	gboolean success;
-	g_return_if_fail (IS_VOLUME_PLUGIN (plugin));
 
 	success = (keybinder_bind (VOLUME_PLUGIN_LOWER_VOLUME_KEY, volume_plugin_volume_key_pressed, plugin) &&
 			keybinder_bind (VOLUME_PLUGIN_RAISE_VOLUME_KEY, volume_plugin_volume_key_pressed, plugin) &&
