@@ -24,5 +24,5 @@ msgid "Adjust the audio volume of the PulseAudio sound system"
 msgstr "pulseaudio 사운드 볼륨 조절 플러그인"
 
 #: ../panel-plugin/volume-window.ui.h:1
-msgid "Volume Control"
-msgstr "볼륨 조절"
+msgid "<big><b>Volume Control</b></big>"
+msgstr "<big><b>볼륨 조절</b></big>"
