@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Gooroom Maintainers <gooroom@gooroom.kr>
 Build-Depends: debhelper (>= 9), autotools-dev, autoconf, automake, intltool, libtool, xfce4-dev-tools,
  libxfce4panel-2.0-dev, libpulse-dev, libglib2.0-dev, libgtk-3-dev, libcanberra-gtk3-dev,
- libxfce4util-dev, libxfconf-0-dev, libkeybinder-3.0-dev
+ libxfce4util-dev, libxfconf-0-dev, libkeybinder-3.0-dev, libnotify-dev
 Standards-Version: 3.9.6
 
 Package: gooroom-volume-plugin

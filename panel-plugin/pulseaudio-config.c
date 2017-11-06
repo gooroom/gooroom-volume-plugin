@@ -33,7 +33,6 @@
 #include <string.h>
 #endif
 
-//#include <libxfce4util/libxfce4util.h>
 #include <xfconf/xfconf.h>
 #include <libxfce4panel/xfce-panel-plugin.h>
 

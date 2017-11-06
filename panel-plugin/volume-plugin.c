@@ -36,6 +36,7 @@
 #include <keybinder.h>
 #include <canberra-gtk.h>
 
+#include <libnotify/notify.h>
 
 #include "volume-plugin.h"
 #include "volume-resources.h"
@@ -72,6 +73,8 @@ struct _VolumePlugin
 	GtkWidget         *popup_window;
 	GtkWidget         *popup_vol_icon;
 
+	NotifyNotification* notification;
+
 	const gchar       *icon_name;
 };
 
@@ -79,6 +82,47 @@ struct _VolumePlugin
 /* define the plugin */
 XFCE_PANEL_DEFINE_PLUGIN (VolumePlugin, volume_plugin)
 
+static void
+notify_notification (NotifyNotification *notification,
+                     const gchar        *icon,
+                     gint                value)
+{
+    GdkPixbuf *pix = NULL;
+
+	pix = gtk_icon_theme_load_icon (gtk_icon_theme_get_default (),
+                                    icon,
+                                    32,
+                                    GTK_ICON_LOOKUP_FORCE_SIZE,
+                                    NULL);
+
+	notify_notification_set_image_from_pixbuf (notification, pix);
+	notify_notification_set_hint_int32 (notification, "value", value);
+	notify_notification_show (notification, NULL);
+}
+
+static void
+notify_volume_notification (NotifyNotification *notification,
+                            gboolean            muted,
+                            gdouble             volume)
+{
+	const gchar *icon;
+
+	if (muted) {
+		icon = "audio-volume-muted-symbolic";
+	} else {
+		if (volume== 0) {
+			icon = "audio-volume-low-symbolic";
+		} else if (volume < 34) {
+			icon = "audio-volume-low-symbolic";
+		} else if (volume < 67) {
+			icon = "audio-volume-medium-symbolic";
+		} else {
+			icon = "audio-volume-high-symbolic";
+		}
+	}
+
+	notify_notification (notification, icon, volume);
+}
 
 static void
 volume_plugin_volume_key_pressed (const char *keystring, gpointer data)
@@ -86,23 +130,52 @@ volume_plugin_volume_key_pressed (const char *keystring, gpointer data)
 	VolumePlugin *plugin      = VOLUME_PLUGIN (data);
 	gdouble       volume      = pulseaudio_volume_get_volume (plugin->volume);
 	gdouble       volume_step = pulseaudio_config_get_volume_step (plugin->config) / 100.0;
+	gboolean      muted       = pulseaudio_volume_get_muted (plugin->volume);
+	gdouble new_volume;
 
-	if (g_strcmp0 (keystring, VOLUME_PLUGIN_RAISE_VOLUME_KEY) == 0)
-		pulseaudio_volume_set_volume (plugin->volume, MIN (volume + volume_step, MAX (volume, 1.0)));
-	else if (strcmp (keystring, VOLUME_PLUGIN_LOWER_VOLUME_KEY) == 0)
-		pulseaudio_volume_set_volume (plugin->volume, volume - volume_step);
+	if (muted) {
+		new_volume = volume;
+	} else {
+		if (g_strcmp0 (keystring, VOLUME_PLUGIN_RAISE_VOLUME_KEY) == 0)
+			new_volume = MIN (volume + volume_step, MAX (volume, 1.0));
+		else if (strcmp (keystring, VOLUME_PLUGIN_LOWER_VOLUME_KEY) == 0)
+			new_volume = volume - volume_step;
+		else
+			return;
+	}
+
+	/* Play a sound! */
+	ca_gtk_play_for_widget (GTK_WIDGET (plugin), 0,
+			CA_PROP_EVENT_ID, "audio-volume-change",
+			NULL);
+
+	pulseaudio_volume_set_volume (plugin->volume, new_volume);
+
+	notify_volume_notification (plugin->notification, muted, new_volume * 100.0);
 }
 
 static void
 volume_plugin_mute_pressed (const char *keystring, gpointer data)
 {
+	gboolean muted;
 	VolumePlugin *plugin = VOLUME_PLUGIN (data);
 
+	gdouble volume = pulseaudio_volume_get_volume (plugin->volume);
+
 	if (pulseaudio_volume_get_muted (plugin->volume)) {
-		pulseaudio_volume_set_muted (plugin->volume, FALSE);
+		muted = FALSE;
 	} else {
-		pulseaudio_volume_set_muted (plugin->volume, TRUE);
+		muted = TRUE;
 	}
+
+	pulseaudio_volume_set_muted (plugin->volume, muted);
+
+	/* Play a sound! */
+	ca_gtk_play_for_widget (GTK_WIDGET (plugin), 0,
+			CA_PROP_EVENT_ID, "audio-volume-change",
+			NULL);
+
+	notify_volume_notification (plugin->notification, muted, volume * 100.0);
 
 	pulseaudio_volume_toggle_muted (plugin->volume);
 }
@@ -192,6 +265,11 @@ on_mute_button_clicked (GtkToggleButton *button, gpointer data)
 		gtk_widget_set_sensitive (plugin->scale, FALSE);
 		pulseaudio_volume_set_muted (plugin->volume, TRUE);
 	}
+
+	/* Play a sound! */
+	ca_gtk_play_for_widget (GTK_WIDGET (plugin), 0,
+			CA_PROP_EVENT_ID, "audio-volume-change",
+			NULL);
 }
 
 static gboolean
@@ -212,6 +290,9 @@ on_scale_value_changed (GtkRange *range, gpointer data)
 {
 	gdouble new_volume;
 	VolumePlugin *plugin = VOLUME_PLUGIN (data);
+
+	if (plugin->notification)
+		notify_notification_close (plugin->notification, NULL);
 
 	new_volume = gtk_range_get_value (GTK_RANGE (range));
 	pulseaudio_volume_set_volume (plugin->volume, new_volume / 100.0);
@@ -286,7 +367,6 @@ close_popup_window (gpointer data)
 	return FALSE;
 }
 
-
 static GtkWidget *
 popup_window_new (VolumePlugin *plugin)
 {
@@ -305,9 +385,11 @@ popup_window_new (VolumePlugin *plugin)
 	gtk_window_set_decorated (GTK_WINDOW (window), FALSE);
 	gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
 	gtk_window_set_skip_taskbar_hint (GTK_WINDOW (window), TRUE);
-	gtk_window_set_skip_pager_hint(GTK_WINDOW (window), TRUE);
+	gtk_window_set_skip_pager_hint (GTK_WINDOW (window), TRUE);
 	gtk_window_set_keep_above (GTK_WINDOW (window), TRUE);
-	gtk_window_stick(GTK_WINDOW (window));
+	gtk_window_stick (GTK_WINDOW (window));
+
+	gtk_widget_add_events (window, GDK_KEY_PRESS_MASK);
 
 	if (gtk_widget_has_screen (GTK_WIDGET (plugin->button)))
 		screen = gtk_widget_get_screen (GTK_WIDGET (plugin->button));
@@ -346,6 +428,9 @@ popup_window_new (VolumePlugin *plugin)
 
 	xfce_panel_plugin_block_autohide (XFCE_PANEL_PLUGIN (plugin), TRUE);
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (plugin->button), TRUE);
+
+	if (plugin->notification)
+		notify_notification_close (plugin->notification, NULL);
 
 	return window;
 }
@@ -417,6 +502,7 @@ volume_plugin_init (VolumePlugin *plugin)
 	plugin->scale          = NULL;
 	plugin->popup_window   = NULL;
 	plugin->popup_vol_icon = NULL;
+	plugin->notification   = NULL;
 
 	g_resources_register (volume_get_resource ());
 
@@ -425,11 +511,14 @@ volume_plugin_init (VolumePlugin *plugin)
 	plugin->config = pulseaudio_config_new (xfce_panel_plugin_get_property_base (XFCE_PANEL_PLUGIN (plugin)));
 	plugin->volume = pulseaudio_volume_new (plugin->config);
 
+	notify_init ("gooroom-volume-plugin");
+
+	plugin->notification = notify_notification_new ("gooroom-volumed-plugin", NULL, NULL);
+
 	/* Initialize libkeybinder */
 	keybinder_init ();
 
-	g_signal_connect (G_OBJECT (plugin->config), "notify::enable-keyboard-shortcuts",
-			G_CALLBACK (volume_plugin_bind_keys_cb), plugin);
+	g_signal_connect (G_OBJECT (plugin->config), "notify::enable-keyboard-shortcuts", G_CALLBACK (volume_plugin_bind_keys_cb), plugin);
 	if (pulseaudio_config_get_enable_keyboard_shortcuts (plugin->config))
 		volume_plugin_bind_keys (plugin);
 	else
