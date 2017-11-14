@@ -1,3 +1,18 @@
+gooroom-volume-plugin (0.1.1+grm1u1) unstable; urgency=medium
+
+  [ HeoChangJu ]
+  * [0311e4ed] Modify tray icon size
+
+  [ cjheo ]
+  * [44a0f286] Changed icons and delete unnecessary files
+  * [2b1614d1] Modify desktop file to prevent module from being added redundantly
+  * [e215a2fd] Setting to use markup for plugin title.
+  * [4509a55b] Binding hot key for volume control.
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Tue, 14 Nov 2017 09:30:19 +0900
+
 gooroom-volume-plugin (0.1+grm1) unstable; urgency=medium
 
   [ cjheo ]
