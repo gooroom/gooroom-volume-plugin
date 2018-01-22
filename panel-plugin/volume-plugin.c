@@ -68,7 +68,7 @@ struct _VolumePlugin
 	GtkBuilder        *builder;
 
 	GtkWidget         *button;
-	GtkWidget         *image;
+	GtkWidget         *img_tray;
 	GtkWidget         *scale;
 	GtkWidget         *popup_window;
 	GtkWidget         *popup_vol_icon;
@@ -246,8 +246,7 @@ volume_button_update (VolumePlugin *plugin, gboolean force_update)
 
 	if (force_update || icon_name != plugin->icon_name) {
 		plugin->icon_name = icon_name;
-		gtk_image_set_from_icon_name (GTK_IMAGE (plugin->image), icon_name, GTK_ICON_SIZE_MENU);
-		gtk_image_set_pixel_size (GTK_IMAGE (plugin->image), 22);
+		gtk_image_set_from_icon_name (GTK_IMAGE (plugin->img_tray), icon_name, GTK_ICON_SIZE_LARGE_TOOLBAR);
 	}
 }
 
@@ -456,6 +455,21 @@ on_volume_button_pressed (GtkWidget *widget, GdkEventButton *event, gpointer dat
 	return (*GTK_WIDGET_CLASS (volume_plugin_parent_class)->button_press_event) (GTK_WIDGET (plugin), event);
 }
 
+static gboolean
+lazy_display_volume (gpointer data)
+{
+	VolumePlugin *plugin = VOLUME_PLUGIN (data);
+
+	plugin->img_tray = gtk_image_new ();
+	gtk_container_add (GTK_CONTAINER (plugin->button), plugin->img_tray);
+
+	volume_button_update (plugin, TRUE);
+
+	gtk_widget_show (plugin->img_tray);
+
+	return FALSE;
+}
+
 static void
 volume_plugin_free_data (XfcePanelPlugin *panel_plugin)
 {
@@ -492,13 +506,9 @@ volume_plugin_mode_changed (XfcePanelPlugin *plugin, XfcePanelPluginMode mode)
 static void
 volume_plugin_init (VolumePlugin *plugin)
 {
-	GtkWidget *image;
-
-	xfce_textdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR, "UTF-8");
-
 	plugin->volume         = NULL;
 	plugin->button         = NULL;
-	plugin->image          = NULL;
+	plugin->img_tray       = NULL;
 	plugin->scale          = NULL;
 	plugin->popup_window   = NULL;
 	plugin->popup_vol_icon = NULL;
@@ -523,6 +533,14 @@ volume_plugin_init (VolumePlugin *plugin)
 		volume_plugin_bind_keys (plugin);
 	else
 		volume_plugin_unbind_keys (plugin);
+}
+
+static void
+volume_plugin_construct (XfcePanelPlugin *panel_plugin)
+{
+	VolumePlugin *plugin = VOLUME_PLUGIN (panel_plugin);
+
+	xfce_textdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR, "UTF-8");
 
 	plugin->button = xfce_panel_create_toggle_button ();
 	gtk_button_set_relief (GTK_BUTTON (plugin->button), GTK_RELIEF_NONE);
@@ -530,19 +548,10 @@ volume_plugin_init (VolumePlugin *plugin)
 	xfce_panel_plugin_add_action_widget (XFCE_PANEL_PLUGIN (plugin), plugin->button);
 	gtk_widget_show (plugin->button);
 
-	plugin->image = gtk_image_new ();
-	gtk_container_add (GTK_CONTAINER (plugin->button), plugin->image);
-	gtk_widget_show (plugin->image);
+	g_timeout_add (200, (GSourceFunc)lazy_display_volume, plugin);
 
 	g_signal_connect (G_OBJECT (plugin->button), "button-press-event", G_CALLBACK (on_volume_button_pressed), plugin);
 	g_signal_connect (G_OBJECT (plugin->volume), "volume-changed", G_CALLBACK (on_volume_changed), plugin);
-
-	volume_button_update (plugin, TRUE);
-}
-
-static void
-volume_plugin_construct (XfcePanelPlugin *panel_plugin)
-{
 }
 
 static void
