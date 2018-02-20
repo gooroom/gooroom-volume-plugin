@@ -45,7 +45,7 @@
 #include "pulseaudio-config.h"
 #include "pulseaudio-volume.h"
 
-#define PANEL_TRAY_ICON_SIZE            22
+#define PANEL_TRAY_ICON_SIZE            16
 
 #define VOLUME_PLUGIN_RAISE_VOLUME_KEY  "XF86AudioRaiseVolume"
 #define VOLUME_PLUGIN_LOWER_VOLUME_KEY  "XF86AudioLowerVolume"
@@ -411,7 +411,7 @@ popup_volume_window (VolumePlugin *plugin)
 	gtk_box_pack_start (GTK_BOX (main_vbox), ebox, FALSE, FALSE, 0);
 
 	GtkWidget *alignment = gtk_alignment_new (0.0, 0.5, 0.0, 0.0);
-	gtk_alignment_set_padding (GTK_ALIGNMENT (alignment), 5, 5, 5, 5);
+	gtk_alignment_set_padding (GTK_ALIGNMENT (alignment), 7, 7, 7, 7);
 	gtk_container_add (GTK_CONTAINER (ebox), alignment);
 
 	GtkWidget *title = gtk_label_new (NULL);
@@ -505,6 +505,34 @@ on_volume_button_pressed (GtkWidget *widget, GdkEventButton *event, gpointer dat
 	return (*GTK_WIDGET_CLASS (volume_plugin_parent_class)->button_press_event) (GTK_WIDGET (plugin), event);
 }
 
+static gboolean
+update_ui (gpointer data)
+{
+	VolumePlugin *plugin = VOLUME_PLUGIN (data);
+
+	plugin->config = pulseaudio_config_new (xfce_panel_plugin_get_property_base (XFCE_PANEL_PLUGIN (plugin)));
+	plugin->volume = pulseaudio_volume_new (plugin->config);
+
+	notify_init ("gooroom-volume-plugin");
+
+	plugin->notification = notify_notification_new ("gooroom-volumed-plugin", NULL, NULL);
+
+	/* Initialize libkeybinder */
+	keybinder_init ();
+
+	g_signal_connect (G_OBJECT (plugin->config), "notify::enable-keyboard-shortcuts", G_CALLBACK (volume_plugin_bind_keys_cb), plugin);
+	if (pulseaudio_config_get_enable_keyboard_shortcuts (plugin->config))
+		volume_plugin_bind_keys (plugin);
+	else
+		volume_plugin_unbind_keys (plugin);
+
+	on_volume_button_icon_update_timeout (plugin);
+
+	g_signal_connect (G_OBJECT (plugin->button), "button-press-event", G_CALLBACK (on_volume_button_pressed), plugin);
+
+	return FALSE;
+}
+
 static void
 volume_plugin_free_data (XfcePanelPlugin *panel_plugin)
 {
@@ -546,14 +574,16 @@ volume_plugin_init (VolumePlugin *plugin)
 	plugin->popup_vol_icon = NULL;
 	plugin->notification   = NULL;
 
+	xfce_textdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR, "UTF-8");
+
 	plugin->button = xfce_panel_create_toggle_button ();
 	xfce_panel_plugin_add_action_widget (XFCE_PANEL_PLUGIN (plugin), plugin->button);
 	gtk_container_add (GTK_CONTAINER (plugin), plugin->button);
 
 	GdkPixbuf *pix = NULL;
 	pix = gtk_icon_theme_load_icon (gtk_icon_theme_get_default (),
-                                    "gooroom-volume-high-panel-symbolic", PANEL_TRAY_ICON_SIZE,
-                                    GTK_ICON_LOOKUP_FORCE_SIZE, NULL);
+              "gooroom-volume-high-panel-symbolic", PANEL_TRAY_ICON_SIZE,
+              GTK_ICON_LOOKUP_FORCE_SIZE, NULL);
 
 	if (pix) {
 		plugin->img_tray = gtk_image_new_from_pixbuf (pix);
@@ -563,15 +593,14 @@ volume_plugin_init (VolumePlugin *plugin)
 
 	gtk_widget_show_all (plugin->button);
 
-	g_signal_connect (G_OBJECT (plugin->button), "button-press-event", G_CALLBACK (on_volume_button_pressed), plugin);
+	g_timeout_add (500, (GSourceFunc) update_ui, plugin);
 }
 
+#if 0
 static void
 volume_plugin_construct (XfcePanelPlugin *panel_plugin)
 {
 	VolumePlugin *plugin = VOLUME_PLUGIN (panel_plugin);
-
-	xfce_textdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR, "UTF-8");
 
 	plugin->config = pulseaudio_config_new (xfce_panel_plugin_get_property_base (XFCE_PANEL_PLUGIN (plugin)));
 	plugin->volume = pulseaudio_volume_new (plugin->config);
@@ -591,6 +620,7 @@ volume_plugin_construct (XfcePanelPlugin *panel_plugin)
 
 	g_timeout_add (200, (GSourceFunc) on_volume_button_icon_update_timeout, plugin);
 }
+#endif
 
 static void
 volume_plugin_class_init (VolumePluginClass *klass)
@@ -598,7 +628,7 @@ volume_plugin_class_init (VolumePluginClass *klass)
 	XfcePanelPluginClass *plugin_class;
 
 	plugin_class = XFCE_PANEL_PLUGIN_CLASS (klass);
-	plugin_class->construct = volume_plugin_construct;
+//	plugin_class->construct = volume_plugin_construct;
 	plugin_class->free_data = volume_plugin_free_data;
 	plugin_class->size_changed = volume_plugin_size_changed;
 	plugin_class->mode_changed = volume_plugin_mode_changed;
