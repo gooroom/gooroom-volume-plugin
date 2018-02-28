@@ -21,8 +21,8 @@ License: GPL-2.0+
  On Debian systems, the complete text of the GNU General
  Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
 
-Files: icons/scalable/status/*.svg
-Copyright: Copyright 2013 Satyajit Sahoo <satyajit.happy@gmail.com>
+Files: icons/*
+Copyright: 2010 Matthieu James <matthieu.james@gmail.com>
 License: GPL-3+
  This program is free software; you can redistribute it
  and/or modify it under the terms of the GNU General Public

@@ -45,7 +45,7 @@
 #include "pulseaudio-config.h"
 #include "pulseaudio-volume.h"
 
-#define PANEL_TRAY_ICON_SIZE            16
+#define PANEL_TRAY_ICON_SIZE            22
 
 #define VOLUME_PLUGIN_RAISE_VOLUME_KEY  "XF86AudioRaiseVolume"
 #define VOLUME_PLUGIN_LOWER_VOLUME_KEY  "XF86AudioLowerVolume"
@@ -107,17 +107,16 @@ notify_volume_notification (NotifyNotification *notification,
 	const gchar *icon;
 
 	if (muted) {
-		icon = "gooroom-volume-muted-symbolic";
+		icon = "audio-volume-muted";
 	} else {
-		if (volume== 0) {
-			icon = "gooroom-volume-low-symbolic";
-		} else if (volume < 34) {
-			icon = "gooroom-volume-low-symbolic";
-		} else if (volume < 67) {
-			icon = "gooroom-volume-medium-symbolic";
-		} else {
-			icon = "gooroom-volume-high-symbolic";
-		}
+		if (volume <= 0.0)
+			icon = "audio-volume-zero";
+		else if (volume <= 0.3)
+			icon = "audio-volume-low";
+		else if (volume <= 0.7)
+			icon = "audio-volume-medium";
+		else
+			icon = "audio-volume-high";
 	}
 
 	notify_notification (notification, icon, volume);
@@ -214,7 +213,7 @@ volume_plugin_bind_keys_cb (PulseaudioConfig *config, gpointer data)
 }
 
 static void
-popup_volume_button_icon_update (VolumePlugin *plugin)
+popup_tray_icon_update (VolumePlugin *plugin)
 {
 	gboolean     muted;
 	gboolean     connected;
@@ -224,25 +223,25 @@ popup_volume_button_icon_update (VolumePlugin *plugin)
 	muted = pulseaudio_volume_get_muted (plugin->volume);
 
 	if (!connected || muted) {
-		icon_name = "gooroom-volume-muted-symbolic";
+		icon_name = "audio-volume-muted";
 	} else {
 		gdouble volume = pulseaudio_volume_get_volume (plugin->volume);
 
 		if (volume <= 0.0)
-			icon_name = "gooroom-volume-zero-symbolic";
+			icon_name = "audio-volume-zero";
 		else if (volume <= 0.3)
-			icon_name = "gooroom-volume-low-symbolic";
+			icon_name = "audio-volume-low";
 		else if (volume <= 0.7)
-			icon_name = "gooroom-volume-medium-symbolic";
+			icon_name = "audio-volume-medium";
 		else
-			icon_name = "gooroom-volume-high-symbolic";
+			icon_name = "audio-volume-high";
 	}
 
 	gtk_image_set_from_icon_name (GTK_IMAGE (plugin->popup_vol_icon), icon_name, GTK_ICON_SIZE_BUTTON);
 }
 
 static void
-volume_button_icon_update (VolumePlugin *plugin, gboolean force_update)
+tray_icon_update (VolumePlugin *plugin, gboolean force_update)
 {
 	gboolean     connected;
 	gboolean     muted;
@@ -252,17 +251,17 @@ volume_button_icon_update (VolumePlugin *plugin, gboolean force_update)
 	connected = pulseaudio_volume_get_connected (plugin->volume);
 
 	if (!connected || muted) {
-		icon_name = "gooroom-volume-muted-panel-symbolic";
+		icon_name = "audio-volume-muted-panel";
 	} else {
 		gdouble volume = pulseaudio_volume_get_volume (plugin->volume);
 		if (volume <= 0.0)
-			icon_name = "gooroom-volume-zero-panel-symbolic";
+			icon_name = "audio-volume-zero-panel";
 		else if (volume <= 0.3)
-			icon_name = "gooroom-volume-low-panel-symbolic";
+			icon_name = "audio-volume-low-panel";
 		else if (volume <= 0.7)
-			icon_name = "gooroom-volume-medium-panel-symbolic";
+			icon_name = "audio-volume-medium-panel";
 		else
-			icon_name = "gooroom-volume-high-panel-symbolic";
+			icon_name = "audio-volume-high-panel";
 	}
 
 	if (force_update || icon_name != plugin->icon_name) {
@@ -270,7 +269,7 @@ volume_button_icon_update (VolumePlugin *plugin, gboolean force_update)
 
 		GdkPixbuf *pix = NULL;
 		pix = gtk_icon_theme_load_icon (gtk_icon_theme_get_default (),
-                     icon_name, PANEL_TRAY_ICON_SIZE, GTK_ICON_LOOKUP_FORCE_SIZE, NULL);
+                icon_name, PANEL_TRAY_ICON_SIZE, GTK_ICON_LOOKUP_FORCE_SIZE, NULL);
 
 		if (pix) {
 			gtk_image_set_from_pixbuf (GTK_IMAGE (plugin->img_tray), pix);
@@ -289,7 +288,7 @@ on_mute_button_clicked (GtkToggleButton *button, gpointer data)
 	gtk_widget_set_sensitive (plugin->scale, muted);
 	pulseaudio_volume_set_muted (plugin->volume, !muted);
 
-	popup_volume_button_icon_update (plugin);
+	popup_tray_icon_update (plugin);
 
 	/* Play a sound! */
 	ca_gtk_play_for_widget (GTK_WIDGET (plugin), 0,
@@ -332,11 +331,11 @@ on_volume_changed (PulseaudioVolume *volume, gpointer data)
 
 	gtk_range_set_value (GTK_RANGE (plugin->scale), pulseaudio_volume_get_volume (volume) * 100.0);
 
-	popup_volume_button_icon_update (plugin);
+	popup_tray_icon_update (plugin);
 
 	g_signal_handlers_unblock_by_func (G_OBJECT (plugin->scale), on_scale_value_changed, data);
 
-	volume_button_icon_update (plugin, FALSE);
+	tray_icon_update (plugin, FALSE);
 }
 
 static void
@@ -375,19 +374,8 @@ on_popup_key_press_event (GtkWidget *widget, GdkEventKey *event, gpointer data)
 	return FALSE;
 }
 
-static gboolean
-close_popup_window (gpointer data)
-{
-	VolumePlugin *plugin = VOLUME_PLUGIN (data);
-
-	if (plugin->popup_window != NULL)
-		on_popup_window_closed (plugin);
-
-	return FALSE;
-}
-
 static GtkWidget *
-popup_volume_window (VolumePlugin *plugin)
+popup_window_new (VolumePlugin *plugin)
 {
 	GtkWidget *window;
 
@@ -428,7 +416,7 @@ popup_volume_window (VolumePlugin *plugin)
 	gtk_widget_set_can_focus (button, FALSE);
 	gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
 
-	plugin->popup_vol_icon = gtk_image_new_from_icon_name ("gooroom-volume-muted-symbolic", GTK_ICON_SIZE_BUTTON);
+	plugin->popup_vol_icon = gtk_image_new_from_icon_name ("audio-volume-muted", GTK_ICON_SIZE_BUTTON);
 	gtk_container_add (GTK_CONTAINER (button), plugin->popup_vol_icon);
 
 	plugin->scale = gtk_hscale_new_with_range (0.0, 100.0, 1.0);
@@ -441,7 +429,7 @@ popup_volume_window (VolumePlugin *plugin)
 
 	gboolean muted = pulseaudio_volume_get_muted (plugin->volume);
 
-	const gchar *icon_name = muted ? "gooroom-volume-muted-symbolic" : "gooroom-volume-high-symbolic";
+	const gchar *icon_name = muted ? "audio-volume-muted" : "audio-volume-high";
 
 	gtk_image_set_from_icon_name (GTK_IMAGE (plugin->popup_vol_icon), icon_name, GTK_ICON_SIZE_BUTTON);
 	gtk_widget_set_sensitive (plugin->scale, !muted);
@@ -472,20 +460,7 @@ popup_volume_window (VolumePlugin *plugin)
 }
 
 static gboolean
-on_volume_button_icon_update_timeout (gpointer data)
-{
-	VolumePlugin *plugin = VOLUME_PLUGIN (data);
-
-	volume_button_icon_update (plugin, TRUE);
-
-	g_signal_connect (G_OBJECT (plugin->volume), "volume-changed", G_CALLBACK (on_volume_changed), plugin);
-
-	return FALSE;
-}
-
-
-static gboolean
-on_volume_button_pressed (GtkWidget *widget, GdkEventButton *event, gpointer data)
+on_plugin_button_pressed (GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
 	VolumePlugin *plugin = VOLUME_PLUGIN (data);
 
@@ -494,7 +469,7 @@ on_volume_button_pressed (GtkWidget *widget, GdkEventButton *event, gpointer dat
 			if (plugin->popup_window != NULL) {
 				on_popup_window_closed (plugin);
 			} else {
-				plugin->popup_window = popup_volume_window (plugin);
+				plugin->popup_window = popup_window_new (plugin);
 			}
 
 			return TRUE;
@@ -513,9 +488,9 @@ update_ui (gpointer data)
 	plugin->config = pulseaudio_config_new (xfce_panel_plugin_get_property_base (XFCE_PANEL_PLUGIN (plugin)));
 	plugin->volume = pulseaudio_volume_new (plugin->config);
 
-	notify_init ("gooroom-volume-plugin");
+	notify_init ("audio-volume-plugin");
 
-	plugin->notification = notify_notification_new ("gooroom-volumed-plugin", NULL, NULL);
+	plugin->notification = notify_notification_new ("audio-volumed-plugin", NULL, NULL);
 
 	/* Initialize libkeybinder */
 	keybinder_init ();
@@ -526,9 +501,11 @@ update_ui (gpointer data)
 	else
 		volume_plugin_unbind_keys (plugin);
 
-	on_volume_button_icon_update_timeout (plugin);
+	tray_icon_update (plugin, TRUE);
 
-	g_signal_connect (G_OBJECT (plugin->button), "button-press-event", G_CALLBACK (on_volume_button_pressed), plugin);
+	g_signal_connect (G_OBJECT (plugin->volume), "volume-changed", G_CALLBACK (on_volume_changed), plugin);
+
+	g_signal_connect (G_OBJECT (plugin->button), "button-press-event", G_CALLBACK (on_plugin_button_pressed), plugin);
 
 	return FALSE;
 }
@@ -541,7 +518,8 @@ volume_plugin_free_data (XfcePanelPlugin *panel_plugin)
 	/* release keybindings */
 	volume_plugin_unbind_keys (plugin);
 
-	close_popup_window (plugin);
+	if (plugin->popup_window != NULL)
+		on_popup_window_closed (plugin);
 }
 
 static gboolean
@@ -582,11 +560,12 @@ volume_plugin_init (VolumePlugin *plugin)
 
 	GdkPixbuf *pix = NULL;
 	pix = gtk_icon_theme_load_icon (gtk_icon_theme_get_default (),
-              "gooroom-volume-high-panel-symbolic", PANEL_TRAY_ICON_SIZE,
+              "audio-volume-high-panel", PANEL_TRAY_ICON_SIZE,
               GTK_ICON_LOOKUP_FORCE_SIZE, NULL);
 
 	if (pix) {
 		plugin->img_tray = gtk_image_new_from_pixbuf (pix);
+		gtk_image_set_pixel_size (GTK_IMAGE (plugin->img_tray), PANEL_TRAY_ICON_SIZE);
 		gtk_container_add (GTK_CONTAINER (plugin->button), plugin->img_tray);
 		g_object_unref (G_OBJECT (pix));
 	}
@@ -596,39 +575,12 @@ volume_plugin_init (VolumePlugin *plugin)
 	g_timeout_add (500, (GSourceFunc) update_ui, plugin);
 }
 
-#if 0
-static void
-volume_plugin_construct (XfcePanelPlugin *panel_plugin)
-{
-	VolumePlugin *plugin = VOLUME_PLUGIN (panel_plugin);
-
-	plugin->config = pulseaudio_config_new (xfce_panel_plugin_get_property_base (XFCE_PANEL_PLUGIN (plugin)));
-	plugin->volume = pulseaudio_volume_new (plugin->config);
-
-	notify_init ("gooroom-volume-plugin");
-
-	plugin->notification = notify_notification_new ("gooroom-volumed-plugin", NULL, NULL);
-
-	/* Initialize libkeybinder */
-	keybinder_init ();
-
-	g_signal_connect (G_OBJECT (plugin->config), "notify::enable-keyboard-shortcuts", G_CALLBACK (volume_plugin_bind_keys_cb), plugin);
-	if (pulseaudio_config_get_enable_keyboard_shortcuts (plugin->config))
-		volume_plugin_bind_keys (plugin);
-	else
-		volume_plugin_unbind_keys (plugin);
-
-	g_timeout_add (200, (GSourceFunc) on_volume_button_icon_update_timeout, plugin);
-}
-#endif
-
 static void
 volume_plugin_class_init (VolumePluginClass *klass)
 {
 	XfcePanelPluginClass *plugin_class;
 
 	plugin_class = XFCE_PANEL_PLUGIN_CLASS (klass);
-//	plugin_class->construct = volume_plugin_construct;
 	plugin_class->free_data = volume_plugin_free_data;
 	plugin_class->size_changed = volume_plugin_size_changed;
 	plugin_class->mode_changed = volume_plugin_mode_changed;
