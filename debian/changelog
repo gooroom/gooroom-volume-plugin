@@ -1,3 +1,15 @@
+gooroom-volume-plugin (0.1.2+grm1u1) unstable; urgency=medium
+
+  [ cjheo ]
+  * [34231a07] Changing the file format of the tray icon from svg to png
+  * [becbdf3c] Using the gtk2 library instead of gtk3 as a stability issue in the xfce4 panel
+  * [edcda643] Changed the panel icon size
+  * [ab26c017] Updating tray and notification icons
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Wed, 14 Mar 2018 18:02:00 +0900
+
 gooroom-volume-plugin (0.1.1+grm1u1) unstable; urgency=medium
 
   [ HeoChangJu ]
