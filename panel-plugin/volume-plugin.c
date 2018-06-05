@@ -542,6 +542,12 @@ volume_plugin_mode_changed (XfcePanelPlugin *plugin, XfcePanelPluginMode mode)
 }
 
 static void
+process_done_cb (GPid pid, gint status, gpointer data)
+{
+	g_spawn_close_pid (pid);
+}
+
+static void
 volume_plugin_init (VolumePlugin *plugin)
 {
 	plugin->volume         = NULL;
@@ -573,6 +579,13 @@ volume_plugin_init (VolumePlugin *plugin)
 	gtk_widget_show_all (plugin->button);
 
 	g_timeout_add (500, (GSourceFunc) update_ui, plugin);
+
+	// kill xfce4-volumed
+	GPid pid;
+	gchar *arr_cmd[] = {"/usr/bin/killall", "xfce4-volumed", NULL};
+	if (g_spawn_async (NULL, arr_cmd, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, &pid, NULL)) {
+		g_child_watch_add (pid, (GChildWatchFunc) process_done_cb, NULL);
+	}
 }
 
 static void
