@@ -1,11 +1,7 @@
-dnl
-dnl gooroom-volume-plugin - A volume plugin for the Xfce panel
-dnl
-
 dnl ***************************
 dnl *** Initialize autoconf ***
 dnl ***************************
-AC_INIT([gooroom-volume-plugin], [0.1.0])
+AC_INIT([gooroom-volume-plugin], [0.1.3])
 AC_PREREQ([2.50])
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_TARGET()
@@ -14,7 +10,7 @@ AC_REVISION([@REVISION@])
 dnl ***************************
 dnl *** Initialize automake ***
 dnl ***************************
-AM_INIT_AUTOMAKE([1.8 dist-bzip2 tar-ustar])
+AM_INIT_AUTOMAKE([1.8 dist-xz no-dist-gzip foreign])
 AM_MAINTAINER_MODE()
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
@@ -35,13 +31,11 @@ LT_INIT([disable-static])
 dnl **********************************
 dnl *** Check for standard headers ***
 dnl **********************************
-AC_CHECK_HEADERS([math.h memory.h stdlib.h string.h sys/stat.h \
-                  sys/time.h time.h])
-
-dnl ************************************
-dnl *** Check for standard functions ***
-dnl ************************************
-AC_CHECK_FUNCS([])
+AC_HEADER_STDC()
+AC_CHECK_HEADERS([crt_externs.h errno.h fcntl.h limits.h locale.h math.h \
+                  memory.h signal.h stdarg.h stdlib.h string.h unistd.h])
+AC_CHECK_DECLS([environ])
+AC_CHECK_FUNCS([_NSGetEnviron])
 
 dnl ******************************
 dnl *** Check for i18n support ***

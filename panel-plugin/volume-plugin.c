@@ -3,7 +3,7 @@
  *                             2017      Viktor Odintsev <zakhams@gmail.com>
  *                             2017      Matthieu Mota <matthieumota@gmail.com>
  *
- * Modified work Copyright (c) 2017 Gooroom Project Team
+ * Modified work Copyright (c) 2015-2019 Gooroom Project Team
  *
  *
  *  This program is free software; you can redistribute it and/or

@@ -1,10 +1,30 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: gooroom-volume-plugin
 Source: http://git.gooroom.kr/gooroom-volume-plugin/
 
 Files: *
-Copyright: 2016 gooroom <gooroom@gooroom.kr>
-License: GPL-2.0+
+Copyright: 2015-2019 Gooroom <gooroom@gooroom.kr>
+License: GPL-2+
+
+Files: panel-plugin/volume-plugin.*
+Copyright: 2014-2017 Andrzej <andrzejr@xfce.org>
+           2017      Viktor Odintsev <zakhams@gmail.com>
+           2017      Matthieu Mota <matthieumota@gmail.com>
+           2015-2019 Gooroom <gooroom@gooroom.kr>
+License: GPL-2+
+
+Files: panel-plugin/pulseaudio-config.*
+Copyright: 2014 Andrzej <ndrwrdck@gmail.com>
+License: GPL-2+
+
+Files: panel-plugin/pulseaudio-debug.*
+Copyright: 2015 Guido Berhoerster <guido+xfce@berhoerster.name>
+License: GPL-2+
+
+Files: panel-plugin/pulseaudio-volume.*
+Copyright: 2014-2015 Andrzej <ndrwrdck@gmail.com>
+License: GPL-2+
+
+License: GPL-2+
  This package is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 2 of the License, or
