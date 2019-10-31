@@ -1,3 +1,12 @@
+gooroom-volume-plugin (0.1.4+grm1u1) unstable; urgency=medium
+
+  [ user ]
+  * [977afd80] Update sources regarding copyright
+
+  [ Gooroom Autobuilder ]
+
+ -- Gooroom Autobuilder <jenkins@gooroom.kr>  Thu, 31 Oct 2019 12:43:29 +0900
+
 gooroom-volume-plugin (0.1.3+grm1u1) unstable; urgency=medium
 
   [ cjheo ]
