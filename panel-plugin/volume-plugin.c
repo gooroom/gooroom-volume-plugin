@@ -45,7 +45,7 @@
 #include "pulseaudio-config.h"
 #include "pulseaudio-volume.h"
 
-#define PANEL_TRAY_ICON_SIZE            22
+#define PANEL_TRAY_ICON_SIZE            24
 
 #define VOLUME_PLUGIN_RAISE_VOLUME_KEY  "XF86AudioRaiseVolume"
 #define VOLUME_PLUGIN_LOWER_VOLUME_KEY  "XF86AudioLowerVolume"
@@ -238,6 +238,7 @@ popup_tray_icon_update (VolumePlugin *plugin)
 	}
 
 	gtk_image_set_from_icon_name (GTK_IMAGE (plugin->popup_vol_icon), icon_name, GTK_ICON_SIZE_BUTTON);
+	gtk_image_set_pixel_size (GTK_IMAGE (plugin->popup_vol_icon), 24);
 }
 
 static void
@@ -417,6 +418,7 @@ popup_window_new (VolumePlugin *plugin)
 	gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
 
 	plugin->popup_vol_icon = gtk_image_new_from_icon_name ("audio-volume-muted", GTK_ICON_SIZE_BUTTON);
+	gtk_image_set_pixel_size (GTK_IMAGE (plugin->popup_vol_icon), 24);
 	gtk_container_add (GTK_CONTAINER (button), plugin->popup_vol_icon);
 
 	plugin->scale = gtk_hscale_new_with_range (0.0, 100.0, 1.0);
@@ -432,6 +434,7 @@ popup_window_new (VolumePlugin *plugin)
 	const gchar *icon_name = muted ? "audio-volume-muted" : "audio-volume-high";
 
 	gtk_image_set_from_icon_name (GTK_IMAGE (plugin->popup_vol_icon), icon_name, GTK_ICON_SIZE_BUTTON);
+	gtk_image_set_pixel_size (GTK_IMAGE (plugin->popup_vol_icon), 24);
 	gtk_widget_set_sensitive (plugin->scale, !muted);
 
 	g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (on_mute_button_clicked), plugin);

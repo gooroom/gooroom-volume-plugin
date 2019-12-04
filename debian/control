@@ -2,7 +2,22 @@ Source: gooroom-volume-plugin
 Section: xfce
 Priority: optional
 Maintainer: Gooroom Maintainers <gooroom@gooroom.kr>
-Build-Depends: debhelper (>= 9), autotools-dev, autoconf, automake, intltool, libtool, xfce4-dev-tools, xfce4-panel-dev, libpulse-dev, libglib2.0-dev, libgtk2.0-dev, libcanberra-gtk-dev, libxfce4util-dev, libxfconf-0-dev, libkeybinder-dev, libnotify-dev
+Build-Depends: debhelper (>= 9),
+               autotools-dev,
+               autoconf,
+               automake,
+               intltool,
+               libtool,
+               xfce4-dev-tools,
+               xfce4-panel-dev,
+               libpulse-dev,
+               libglib2.0-dev,
+               libgtk2.0-dev,
+               libcanberra-gtk-dev,
+               libxfce4util-dev,
+               libxfconf-0-dev,
+               libkeybinder-dev,
+               libnotify-dev
 Standards-Version: 3.9.6
 
 Package: gooroom-volume-plugin
